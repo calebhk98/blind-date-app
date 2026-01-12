@@ -1,83 +1,62 @@
-# Blind Date App
+# Blind Date App - Client
 
-A unique dating application focusing on algorithmic matching and "blind dates" ($1/date model) with no initial messaging phase.
+Frontend UI for the Blind Date application, built with Next.js 15.
 
 ## Overview
 
-This application uses a credit-based system where users fill out detailed profiles including "deal breakers". The system then runs a matching algorithm to find optimal pairs and arranges a date (location & time) without the users needing to chat first.
-
-### Key Features
--   **Credit System**: Pay-per-date model.
--   **Algorithmic Matching**: Greedy scoring algorithm (O(N^2) for MVP) considering shared preferences and deal breakers.
--   **Deal Breakers**: Hard filters that prevent matches regardless of score.
--   **Clean Architecture**: Separation of concerns using Services and Repository Pattern.
+This is the **frontend-only** client application. All backend logic, database access, and API endpoints are in the separate `server/` directory.
 
 ## Tech Stack
 
 -   **Framework**: Next.js 15 (App Router)
 -   **Language**: TypeScript
--   **Database**: SQLite
--   **ORM**: Prisma (v5)
--   **Testing**: Jest + React Testing Library
-
-## Architecture
-
-The project follows a modular architecture with a strict **Repository Pattern** to abstract database access.
-
-```
-src/
-├── lib/            # Shared utilities (Prisma singleton)
-├── modules/        # Business Logic (Services)
-│   ├── matching/   # Matching Engine
-│   └── profile/    # Profile Management
-├── repositories/   # Data Access Layer (Prisma Implementations)
-│   ├── interfaces.ts           # Repository Interfaces
-│   ├── prisma-user.repository.ts
-│   ├── prisma-profile.repository.ts
-│   └── prisma-match.repository.ts
-└── app/            # Next.js App Router (UI & API)
-```
-
-### Database Abstraction
-We define interfaces (e.g., `IUserRepository`) in `src/repositories/interfaces.ts`. Services depend on these interfaces, not the implementation. This allows swapping the DB layer (e.g., to MongoDB or specialized test mocks) without changing business logic.
+-   **Styling**: CSS Modules (no Tailwind by default)
 
 ## Getting Started
 
 ### Prerequisites
 -   Node.js (v18+)
--   npm
+-   The backend server running (see `../server/README.md`)
 
 ### Installation
 
-1.  Clone the repository and install dependencies:
-    ```bash
-    npm install
-    ```
-
-2.  Initialize the Database (SQLite):
-    ```bash
-    npx prisma db push
-    ```
-
-3.  Run the development server:
-    ```bash
-    npm run dev
-    ```
-
-## Testing
-
-We practice **Test-Driven Development (TDD)**. Tests are isolated and run against a separate SQLite database (`test.db`) to avoid modifying development data.
-
-### Running Tests
-To run the full test suite (Sequential execution + DB Reset):
 ```bash
-npm test
+npm install
 ```
 
-### Test Configuration
--   **`package.json`**: The test script sets `dotenv -e .env.test`, forcing the app to use the test database configuration.
--   **`jest.setup.ts`**: Configures the testing environment.
--   **`.env.test`**: Points `DATABASE_URL` to `file:./test.db`.
+### Running the Client
 
-## License
-[Proprietary/Internal Use]
+Development mode:
+```bash
+npm run dev
+```
+
+The app will run on `http://localhost:3000`
+
+Production build:
+```bash
+npm run build
+npm start
+```
+
+## Project Structure
+
+```
+src/
+└── app/          # Next.js App Router pages
+```
+
+## Connecting to Backend
+
+The client communicates with the backend API at `http://localhost:3001` (configurable via environment variables).
+
+Create a `.env.local` file:
+```
+NEXT_PUBLIC_API_URL=http://localhost:3001
+```
+
+## Development Notes
+
+-   This is a **UI-only** project
+-   No database access or business logic here
+-   All data fetching happens via REST API calls to the server
