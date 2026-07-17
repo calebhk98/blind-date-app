@@ -1,0 +1,24 @@
+# Core backend / API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+pydantic>=2.6
+
+# Web automation (design doc §5)
+playwright>=1.43
+
+# Native-app automation (design doc §5)
+Appium-Python-Client>=3.1
+
+# ML: frozen encoders + small trainable heads (design doc §5, §8)
+torch>=2.2
+scikit-learn>=1.4
+sentence-transformers>=2.6
+open-clip-torch>=2.24
+pillow>=10.0
+numpy>=1.26
+
+# Tooling
+pytest>=8.0
+mypy>=1.9
+httpx>=0.27          # FastAPI TestClient
+ruff>=0.4
