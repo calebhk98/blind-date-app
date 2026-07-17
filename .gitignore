@@ -46,3 +46,16 @@ next-env.d.ts
 *.db
 *.sqlite
 *.sqlite-journal
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# local app data (sqlite + scraped images + sessions)
+/backend/data/
