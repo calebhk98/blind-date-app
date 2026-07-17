@@ -20,11 +20,16 @@ entirely in ``ml/_head.py``.
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 
 import numpy as np
 
-from backend.domain.enums import UserDecision, Verdict
+from backend.domain.enums import ModelName, UserDecision, Verdict
+from backend.ml import model_store
 from backend.ml._head import NO_LABEL, TrainableHead, YES_LABEL
+
+# Registry key this model's head is persisted/loaded under (issue #19).
+_MODEL_NAME = ModelName.COMBINED.value
 
 CAVEAT = (
     "This model only ever sees disagreement / no-relevant-photo cases, so it "
@@ -93,3 +98,25 @@ class CombinedModel:
                 raise ValueError(f"unexpected UserDecision for training: {label!r}")
         int_labels = np.array([_DECISION_TO_INT[label] for label in labels])
         self._head.train(features, int_labels)
+
+    def save(self) -> Path:
+        """Persist this model's fitted head to the model store (issue #19).
+
+        Callers (``ml/training.py``) call this only after a successful
+        ``train()``.
+        """
+        return model_store.save_model(_MODEL_NAME, self._head)
+
+    @classmethod
+    def load_or_cold_start(cls) -> "CombinedModel":
+        """Build a ``CombinedModel`` wrapping the persisted head, if one has
+        been saved for this model name, else a fresh cold-start instance
+        (issue #19). ``CombinedModel`` has no encoder to inject (it
+        reconciles two already-computed verdicts), so this takes no
+        arguments.
+        """
+        instance = cls()
+        persisted_head = model_store.load_latest(_MODEL_NAME)
+        if persisted_head is not None:
+            instance._head = persisted_head
+        return instance

@@ -14,6 +14,15 @@ CONTRACT NOTE: the issue's stated contract is
 per-modality verdicts, it does not encode a single opaque "item". This route
 special-cases the combined model to match its real signature.
 
+MODEL PERSISTENCE (issue #19): each handler loads the model via
+``<Model>.load_or_cold_start()`` (``backend/ml/model_store.py``) rather than
+a bare constructor, so a request actually gets the most recently trained
+head (``ml/training.py::retrain_all`` persists one on every successful
+train) instead of always cold-starting. Every prediction made here is also
+logged to ``model_predictions`` via ``repository.insert_prediction`` so
+rolling accuracy tracking (design doc §8.2, ``ml/accuracy.py``) has real
+predictions to resolve against later.
+
 Heavy ML deps (torch/open_clip/sentence-transformers) are only pulled in by
 ``ImageModel``/``TextModel`` when their encoder actually runs, and only
 imported here inside the handler -- never at module import time -- so this
@@ -23,6 +32,7 @@ router imports fine with only fastapi installed.
 from __future__ import annotations
 
 import sqlite3
+import uuid
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -48,6 +58,18 @@ def infer(model: str, target_id: str, conn: sqlite3.Connection = Depends(get_db)
     return {"probability": probability, "caveat": caveat}
 
 
+def _log_prediction(conn: sqlite3.Connection, model_name: ModelName, target_id: str, probability: float) -> None:
+    from backend.db import repository
+
+    repository.insert_prediction(
+        conn,
+        prediction_id=str(uuid.uuid4()),
+        model_name=model_name.value,
+        target_id=target_id,
+        predicted_probability=probability,
+    )
+
+
 def _predict_image(conn: sqlite3.Connection, photo_id: str) -> float:
     from backend.ml.image_model import ImageModel
 
@@ -57,7 +79,9 @@ def _predict_image(conn: sqlite3.Connection, photo_id: str) -> float:
     row = conn.execute("SELECT file_path FROM photos WHERE photo_id = ?", (photo_id,)).fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail=f"unknown photo id: {photo_id}")
-    return ImageModel().predict_proba(row["file_path"])
+    probability = ImageModel.load_or_cold_start().predict_proba(row["file_path"])
+    _log_prediction(conn, ModelName.IMAGE, photo_id, probability)
+    return probability
 
 
 def _predict_text(conn: sqlite3.Connection, profile_id: str) -> float:
@@ -67,7 +91,9 @@ def _predict_text(conn: sqlite3.Connection, profile_id: str) -> float:
     profile = repository.get_profile(conn, profile_id)
     if profile is None:
         raise HTTPException(status_code=404, detail=f"unknown profile_id: {profile_id}")
-    return TextModel().predict_proba(profile["bio_text"])
+    probability = TextModel.load_or_cold_start().predict_proba(profile["bio_text"])
+    _log_prediction(conn, ModelName.TEXT, profile_id, probability)
+    return probability
 
 
 def _predict_combined(conn: sqlite3.Connection, profile_id: str) -> tuple[float, str]:
@@ -79,5 +105,6 @@ def _predict_combined(conn: sqlite3.Connection, profile_id: str) -> tuple[float,
         raise HTTPException(status_code=404, detail=f"unknown profile_id: {profile_id}")
     image_verdict = Verdict(profile["image_verdict"])
     text_verdict = Verdict(profile["text_verdict"])
-    probability = CombinedModel().predict_proba(image_verdict, text_verdict)
+    probability = CombinedModel.load_or_cold_start().predict_proba(image_verdict, text_verdict)
+    _log_prediction(conn, ModelName.COMBINED, profile_id, probability)
     return probability, CAVEAT

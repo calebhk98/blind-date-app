@@ -9,12 +9,12 @@ outcome (a fresh deployment simply hasn't collected enough labels yet), not a
 bug, so we check first and skip quietly instead of relying on catching the
 head's exception.
 
-NOTE (scope): this module does not persist trained models anywhere -- no
-model store/registry exists yet in this codebase (``backend.config`` has no
-model directory). ``retrain_all`` reports whether each model *would* train
-successfully given current data volumes; wiring persisted/singleton model
-instances into the prediction path is a separate, not-yet-scoped piece of
-work.
+Every model that trains successfully is persisted via ``ml/model_store.py``
+(issue #19): the fitted head is pickled to ``CONFIG.storage.models_dir``, and
+``<model>_model.py::load_or_cold_start`` is how the prediction path (see
+``api/routes/inference.py``) picks it back up -- so a profile inferred after
+a ``retrain_all`` call actually uses the trained head instead of always
+returning the cold-start default.
 """
 
 from __future__ import annotations
@@ -45,6 +45,8 @@ def _retrain_image(conn: sqlite3.Connection) -> bool:
     except ValueError as exc:
         warnings.warn(f"image model retrain skipped: {exc}", stacklevel=2)
         return False
+    if model.is_trained:
+        model.save()
     return model.is_trained
 
 
@@ -63,6 +65,8 @@ def _retrain_text(conn: sqlite3.Connection) -> bool:
     except ValueError as exc:
         warnings.warn(f"text model retrain skipped: {exc}", stacklevel=2)
         return False
+    if model.is_trained:
+        model.save()
     return model.is_trained
 
 
@@ -97,6 +101,8 @@ def _retrain_combined(conn: sqlite3.Connection) -> bool:
     except ValueError as exc:
         warnings.warn(f"combined model retrain skipped: {exc}", stacklevel=2)
         return False
+    if model.is_trained:
+        model.save()
     return model.is_trained
 
 

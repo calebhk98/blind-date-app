@@ -14,15 +14,20 @@ Only ``Verdict.YES``/``Verdict.NO`` are valid training signal; any
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 
 import numpy as np
 
-from backend.domain.enums import Verdict
+from backend.domain.enums import ModelName, Verdict
+from backend.ml import model_store
 from backend.ml._head import NO_LABEL, TrainableHead, YES_LABEL
 from backend.ml.embeddings import Encoder
 from backend.ml.embeddings.text_encoder import SentenceTransformerTextEncoder
 
 _LABEL_TO_INT = {Verdict.YES: YES_LABEL, Verdict.NO: NO_LABEL}
+
+# Registry key this model's head is persisted/loaded under (issue #19).
+_MODEL_NAME = ModelName.TEXT.value
 
 
 class TextModel:
@@ -64,3 +69,25 @@ class TextModel:
         filtered_embeddings = embeddings[keep_idx]
         int_labels = np.array([_LABEL_TO_INT[label] for label in filtered_labels])
         self._head.train(filtered_embeddings, int_labels)
+
+    def save(self) -> Path:
+        """Persist this model's fitted head to the model store (issue #19).
+
+        Only the head is written -- the encoder is frozen/reconstructed
+        separately (see model_store module docstring). Callers
+        (``ml/training.py``) call this only after a successful ``train()``.
+        """
+        return model_store.save_model(_MODEL_NAME, self._head)
+
+    @classmethod
+    def load_or_cold_start(cls, encoder: Encoder | None = None) -> "TextModel":
+        """Build a ``TextModel`` wrapping the persisted head, if one has been
+        saved for this model name, else a fresh cold-start instance (issue
+        #19). The encoder-injection pattern is preserved unchanged --
+        ``encoder`` behaves exactly as it does for ``__init__``.
+        """
+        instance = cls(encoder=encoder)
+        persisted_head = model_store.load_latest(_MODEL_NAME)
+        if persisted_head is not None:
+            instance._head = persisted_head
+        return instance
