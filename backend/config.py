@@ -77,6 +77,54 @@ class AutomationConfig:
     )
     default_fetch_limit: int = field(default_factory=lambda: _env_int("BDA_FETCH_LIMIT", 20))
 
+    # Explicit Chromium binary for Playwright. In managed/sandboxed environments
+    # the browser is pre-installed at a fixed path rather than downloaded, so
+    # WebBackendAdapter launches with this when set (empty = Playwright default).
+    chromium_executable_path: str = field(
+        default_factory=lambda: os.environ.get("BDA_CHROMIUM_PATH", "")
+    )
+
+
+@dataclass(frozen=True)
+class HardFilterConfig:
+    """Default hard-filter criteria (design doc §7.4).
+
+    These are only the *defaults*; the live criteria are editable at runtime and
+    persisted in the ``settings`` table (see issue #21), so tuning them is an
+    in-app action, not a code change. A criterion left at its "unset" value
+    (None / empty) is not enforced.
+    """
+
+    min_age: int | None = field(
+        default_factory=lambda: (int(v) if (v := os.environ.get("BDA_HF_MIN_AGE")) else None)
+    )
+    max_age: int | None = field(
+        default_factory=lambda: (int(v) if (v := os.environ.get("BDA_HF_MAX_AGE")) else None)
+    )
+    max_distance: int | None = field(
+        default_factory=lambda: (int(v) if (v := os.environ.get("BDA_HF_MAX_DIST")) else None)
+    )
+    # Comma-separated; a profile containing any blocked keyword is filtered.
+    blocked_keywords: tuple[str, ...] = field(
+        default_factory=lambda: tuple(
+            k.strip().lower()
+            for k in os.environ.get("BDA_HF_BLOCKED", "").split(",")
+            if k.strip()
+        )
+    )
+    # A profile missing any required keyword is filtered.
+    required_keywords: tuple[str, ...] = field(
+        default_factory=lambda: tuple(
+            k.strip().lower()
+            for k in os.environ.get("BDA_HF_REQUIRED", "").split(",")
+            if k.strip()
+        )
+    )
+    # Session-level default for whether the hard filter excludes from the pool.
+    enabled_by_default: bool = field(
+        default_factory=lambda: os.environ.get("BDA_HF_ENABLED", "true").lower() == "true"
+    )
+
 
 @dataclass(frozen=True)
 class ApiConfig:
@@ -115,6 +163,11 @@ class StorageConfig:
         """Persistent browser/app session storage (cookies, tokens)."""
         return _env_path("BDA_SESSION_DIR", self.data_dir / "sessions")
 
+    @property
+    def models_dir(self) -> Path:
+        """Where trained model heads are persisted (issue #19)."""
+        return _env_path("BDA_MODELS_DIR", self.data_dir / "models")
+
 
 @dataclass(frozen=True)
 class Config:
@@ -123,12 +176,14 @@ class Config:
     automation: AutomationConfig = field(default_factory=AutomationConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
     api: ApiConfig = field(default_factory=ApiConfig)
+    hard_filter: HardFilterConfig = field(default_factory=HardFilterConfig)
 
     def ensure_dirs(self) -> None:
         """Create the local data directories if they do not yet exist."""
         self.storage.data_dir.mkdir(parents=True, exist_ok=True)
         self.storage.image_dir.mkdir(parents=True, exist_ok=True)
         self.storage.session_dir.mkdir(parents=True, exist_ok=True)
+        self.storage.models_dir.mkdir(parents=True, exist_ok=True)
 
 
 # Importable singleton used across the codebase.

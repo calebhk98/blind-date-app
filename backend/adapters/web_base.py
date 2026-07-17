@@ -40,11 +40,19 @@ def parse_xhtml_fragment(raw: str) -> ET.Element:
 
     Raises ``ProfileParseError`` on malformed markup rather than silently
     returning partial data (design doc §4: fail loud).
+
+    Namespaces are stripped from every tag so subclasses can match on bare
+    names (``.//p``): a browser's ``XMLSerializer`` stamps the XHTML namespace
+    onto every element, which would otherwise make ``{ns}p`` != ``p``.
     """
     try:
-        return ET.fromstring(raw)
+        root = ET.fromstring(raw)
     except ET.ParseError as exc:
         raise ProfileParseError(f"malformed profile markup: {exc}") from exc
+    for element in root.iter():
+        if isinstance(element.tag, str) and "}" in element.tag:
+            element.tag = element.tag.split("}", 1)[1]
+    return root
 
 
 class WebBackendAdapter(_CommonAdapterBase):
@@ -82,10 +90,15 @@ class WebBackendAdapter(_CommonAdapterBase):
 
         self.session_dir.mkdir(parents=True, exist_ok=True)
         self._playwright = sync_playwright().start()
-        self._context = self._playwright.chromium.launch_persistent_context(
-            user_data_dir=str(self.session_dir),
-            headless=True,
-        )
+        launch_kwargs: dict[str, Any] = {
+            "user_data_dir": str(self.session_dir),
+            "headless": True,
+        }
+        # Use a pre-installed browser binary when configured (sandboxed envs
+        # ship Chromium at a fixed path instead of downloading it).
+        if CONFIG.automation.chromium_executable_path:
+            launch_kwargs["executable_path"] = CONFIG.automation.chromium_executable_path
+        self._context = self._playwright.chromium.launch_persistent_context(**launch_kwargs)
         return self._context
 
     def close(self) -> None:
