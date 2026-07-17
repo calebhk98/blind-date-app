@@ -65,9 +65,10 @@ def insert_photo(
 
 
 def get_profile(conn: sqlite3.Connection, profile_id: str) -> sqlite3.Row | None:
-    return conn.execute(
+    row: sqlite3.Row | None = conn.execute(
         "SELECT * FROM profiles WHERE profile_id = ?", (profile_id,)
     ).fetchone()
+    return row
 
 
 def get_photos(conn: sqlite3.Connection, profile_id: str) -> list[sqlite3.Row]:

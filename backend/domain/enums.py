@@ -14,7 +14,7 @@ class _StrEnum(str, Enum):
     """String-valued enum whose members compare equal to their raw string."""
 
     def __str__(self) -> str:  # pragma: no cover - trivial
-        return self.value
+        return str(self.value)
 
     @classmethod
     def values(cls) -> list[str]:
