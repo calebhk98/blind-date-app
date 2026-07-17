@@ -52,14 +52,15 @@ class BumbleAdapter(WebBackendAdapter):
         page = context.pages[0] if context.pages else context.new_page()
         timeout_ms = CONFIG.automation.page_timeout_seconds * 1000
         page.goto(BUMBLE_FEED_URL, timeout=timeout_ms)
-        return page.eval_on_selector_all(BUMBLE_CARD_SELECTOR, "els => els.map(e => e.outerHTML)")
+        html_list = page.eval_on_selector_all(BUMBLE_CARD_SELECTOR, "els => els.map(e => e.outerHTML)")
+        return [str(html) for html in html_list]
 
     def _fetch_detail_raw(self, profile_id: str) -> str:
         context = self._ensure_context()
         page = context.pages[0] if context.pages else context.new_page()
         timeout_ms = CONFIG.automation.page_timeout_seconds * 1000
         page.goto(f"{BUMBLE_FEED_URL}/{profile_id}", timeout=timeout_ms)
-        return page.eval_on_selector(BUMBLE_CARD_SELECTOR, "el => el.outerHTML")
+        return str(page.eval_on_selector(BUMBLE_CARD_SELECTOR, "el => el.outerHTML"))
 
     def _parse_profile(self, raw: str) -> RawProfile:
         root = parse_xhtml_fragment(raw)

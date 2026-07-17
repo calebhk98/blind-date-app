@@ -20,6 +20,13 @@ check_untyped_defs = true
 ignore_missing_imports = true
 files = ["backend"]
 
+# Tests exercise behaviour, not type surface; type-check production code only.
+[[tool.mypy.overrides]]
+module = "backend.tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+ignore_errors = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"

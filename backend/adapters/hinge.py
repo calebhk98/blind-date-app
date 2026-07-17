@@ -54,11 +54,11 @@ class HingeAdapter(AppiumBackendAdapter):
     def _fetch_raw(self) -> list[str]:
         driver = self._ensure_driver()
         cards = driver.find_elements("id", HINGE_CARD_RESOURCE_ID)
-        return [card.get_attribute("outerXML") for card in cards]
+        return [str(card.get_attribute("outerXML")) for card in cards]
 
     def _fetch_detail_raw(self, profile_id: str) -> str:
         card = self._find("id", HINGE_CARD_RESOURCE_ID)
-        return card.get_attribute("outerXML")
+        return str(card.get_attribute("outerXML"))
 
     def _parse_profile(self, raw: str) -> RawProfile:
         try:
