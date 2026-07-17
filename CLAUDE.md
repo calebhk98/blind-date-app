@@ -59,11 +59,25 @@ swipes, versioned migrations, type hints).
   - `appium` 3.5.2 (global npm) + `uiautomator2` driver 8.1.0
     (`appium driver install uiautomator2`).
   - `adb` runs (`adb devices` shows none until one is attached).
-  - **The one real blocker is a device.** No `/dev/kvm`, so a *local* Android
-    emulator has no hardware acceleration and won't boot usefully. To actually
-    exercise the Appium adapters (Hinge + `appium`-classified planned apps),
-    attach a **physical device** or a **remote/cloud emulator over TCP**
-    (`adb connect host:port`), then point Appium at it.
+  - **A local emulator does NOT work here — tested empirically, three walls:**
+    1. No CPU virtualization is exposed to the container (`/proc/cpuinfo` has no
+       `vmx`/`svm`, `/dev/kvm` absent, `emulator -accel-check` → "VT disabled").
+       KVM-accelerated x86 images are impossible (not a perms issue — root with
+       full caps still can't; the extensions aren't passed in).
+    2. arm64 images fatal on an x86_64 host: "Avd's CPU Architecture 'arm64' is
+       not supported by the QEMU2 emulator on x86_64 host" (Google dropped
+       ARM-on-x86 translation).
+    3. x86_64 with `-accel off` falls back to TCG and *starts* booting, but the
+       QEMU process is killed (signal 16 → exit 144) within seconds — the
+       harness won't keep a heavy long-running VM process alive (reproduced with
+       the sandbox disabled). Full TCG boot would be impractically slow anyway.
+  - So to exercise the Appium adapters (Hinge + `appium`-classified planned
+    apps), attach a **physical device** or a **remote/cloud emulator over TCP**
+    (`adb connect host:port`) and point Appium at it. A local AVD needs the
+    operator to expose CPU virtualization / `/dev/kvm` to the container.
+  - The system images cost ~9 GB under `/opt/android-sdk/system-images`; remove
+    them (`sdkmanager --uninstall "system-images;..."`) if disk is tight — adb +
+    Appium + a remote device don't need them.
 - **SQLite + FastAPI TestClient:** TestClient runs handlers in a worker thread,
   and a `:memory:` connection can't cross threads. In API tests use a **file DB**
   and a `get_db` override that opens a **fresh connection per request** (see
