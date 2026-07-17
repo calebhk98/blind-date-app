@@ -13,9 +13,12 @@ here -- a bad value fails loud via ``sqlite3.IntegrityError``.
 
 from __future__ import annotations
 
+import json
 import sqlite3
 
+from backend.config import CONFIG
 from backend.db.connection import transaction
+from backend.logic.hard_filter import HardFilterCriteria
 
 
 def insert_app(conn: sqlite3.Connection, app_id: str, backend_type: str, display_name: str) -> None:
@@ -219,3 +222,91 @@ def recent_predictions(
         "LIMIT ?",
         (model_name, window),
     ).fetchall()
+
+
+# --- settings (design doc §7.4, issue #21) ---------------------------------
+#
+# Generic JSON-valued key/value store (migration 0002) so runtime-editable
+# settings don't need a new column/table per setting. get_setting/set_setting
+# are the untyped primitives; get_hard_filter_settings/set_hard_filter_settings
+# below are the one typed consumer today.
+
+_HARD_FILTER_CRITERIA_KEY = "hard_filter_criteria"
+_HARD_FILTER_ENABLED_KEY = "hard_filter_enabled"
+
+
+def get_setting(conn: sqlite3.Connection, key: str) -> str | None:
+    row = conn.execute("SELECT value FROM settings WHERE key = ?", (key,)).fetchone()
+    return row["value"] if row is not None else None
+
+
+def set_setting(conn: sqlite3.Connection, key: str, value: str) -> None:
+    with transaction(conn):
+        conn.execute(
+            "INSERT INTO settings (key, value) VALUES (?, ?) "
+            "ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+            (key, value),
+        )
+
+
+def get_hard_filter_settings(conn: sqlite3.Connection) -> tuple[HardFilterCriteria, bool]:
+    """Stored hard-filter criteria + the session-level enabled toggle.
+
+    Seeded from ``CONFIG.hard_filter`` (the env-driven defaults) the first
+    time this is read, before anything has ever been saved via
+    ``set_hard_filter_settings`` -- the settings table itself stays empty
+    until a write happens, so "seeded" here means "computed on read", not
+    "written on read".
+    """
+    criteria_raw = get_setting(conn, _HARD_FILTER_CRITERIA_KEY)
+    enabled_raw = get_setting(conn, _HARD_FILTER_ENABLED_KEY)
+
+    criteria = (
+        _criteria_from_json(json.loads(criteria_raw))
+        if criteria_raw is not None
+        else _default_hard_filter_criteria()
+    )
+    enabled = (
+        bool(json.loads(enabled_raw))
+        if enabled_raw is not None
+        else CONFIG.hard_filter.enabled_by_default
+    )
+    return criteria, enabled
+
+
+def set_hard_filter_settings(
+    conn: sqlite3.Connection, criteria: HardFilterCriteria, enabled: bool
+) -> None:
+    set_setting(conn, _HARD_FILTER_CRITERIA_KEY, json.dumps(_criteria_to_json(criteria)))
+    set_setting(conn, _HARD_FILTER_ENABLED_KEY, json.dumps(bool(enabled)))
+
+
+def _default_hard_filter_criteria() -> HardFilterCriteria:
+    defaults = CONFIG.hard_filter
+    return HardFilterCriteria(
+        min_age=defaults.min_age,
+        max_age=defaults.max_age,
+        max_distance=defaults.max_distance,
+        blocked_keywords=tuple(defaults.blocked_keywords),
+        required_keywords=tuple(defaults.required_keywords),
+    )
+
+
+def _criteria_to_json(criteria: HardFilterCriteria) -> dict:
+    return {
+        "min_age": criteria.min_age,
+        "max_age": criteria.max_age,
+        "max_distance": criteria.max_distance,
+        "blocked_keywords": list(criteria.blocked_keywords),
+        "required_keywords": list(criteria.required_keywords),
+    }
+
+
+def _criteria_from_json(data: dict) -> HardFilterCriteria:
+    return HardFilterCriteria(
+        min_age=data.get("min_age"),
+        max_age=data.get("max_age"),
+        max_distance=data.get("max_distance"),
+        blocked_keywords=tuple(data.get("blocked_keywords", [])),
+        required_keywords=tuple(data.get("required_keywords", [])),
+    )

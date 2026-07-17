@@ -16,11 +16,10 @@
  *    photo/text field "modality", not "kind".
  *  - GET /profiles/{id} returns {profile, photos}, not a flat object.
  *  - GET /dashboard's rolling accuracy key is "rolling_accuracy".
- * NOTE: photos are only ever given to the client as a server-local
- * `file_path` (e.g. "/tmp/.../photo-0.jpg") — the backend has no route that
- * serves image bytes over HTTP yet. `resolvePhotoUrl()` below only trusts
- * values that already look like an http(s) URL and otherwise reports the
- * raw path so the UI can degrade honestly instead of guessing a URL.
+ * NOTE: /draw and /profiles hand photos over as a server-local `file_path`,
+ * but the backend also exposes GET /photos/{photo_id}/image to stream the
+ * bytes — use `photoImageUrl(photoId)` for <img src>. `resolvePhotoUrl()`
+ * remains only as a fallback for values that are already http(s) URLs.
  *
  * Model boundary (design doc §8.1): this client only forwards whatever the
  * inference endpoint returns (a probability plus an optional caveat). It
@@ -116,6 +115,25 @@ export interface App {
   app_id: string;
   backend_type?: string;
   display_name?: string;
+}
+
+/**
+ * GET/PUT /settings/hard-filter — mirrors
+ * backend/logic/hard_filter.py::HardFilterCriteria field-for-field.
+ * Unset bounds are `null` (not enforced); keyword lists are normalized
+ * (trimmed + lowered) by the backend on PUT.
+ */
+export interface HardFilterCriteria {
+  min_age: number | null;
+  max_age: number | null;
+  max_distance: number | null;
+  blocked_keywords: string[];
+  required_keywords: string[];
+}
+
+export interface HardFilterSettings {
+  criteria: HardFilterCriteria;
+  enabled: boolean;
 }
 
 export interface ProfilePhoto {
@@ -295,5 +313,20 @@ export const api = {
   /** GET /profiles/{id} */
   getProfile(id: string): Promise<ProfileResponse> {
     return request<ProfileResponse>(`/profiles/${encodeURIComponent(id)}`);
+  },
+
+  /** GET /settings/hard-filter */
+  getHardFilterSettings(): Promise<HardFilterSettings> {
+    return request<HardFilterSettings>("/settings/hard-filter");
+  },
+
+  /** PUT /settings/hard-filter */
+  updateHardFilterSettings(
+    payload: HardFilterSettings,
+  ): Promise<HardFilterSettings> {
+    return request<HardFilterSettings>("/settings/hard-filter", {
+      method: "PUT",
+      body: JSON.stringify(payload),
+    });
   },
 };

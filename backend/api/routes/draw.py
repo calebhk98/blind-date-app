@@ -22,12 +22,21 @@ router = APIRouter(prefix="/draw", tags=["draw"])
 
 
 @router.get("")
-def draw(hard_filter: bool = True, conn: sqlite3.Connection = Depends(get_db)) -> dict | None:
+def draw(
+    hard_filter: bool | None = None, conn: sqlite3.Connection = Depends(get_db)
+) -> dict | None:
     from backend.db import repository
     from backend.logic.draw import build_pending_pool, draw_one
 
+    # When the caller omits ?hard_filter, fall back to the stored
+    # session-level toggle (design doc §7.4, issue #21) rather than a fixed
+    # default -- an explicit True/False always wins.
+    hard_filter_enabled = (
+        hard_filter if hard_filter is not None else _stored_hard_filter_enabled(conn, repository)
+    )
+
     profiles = _pending_profiles(conn, repository)
-    pool = build_pending_pool(profiles, hard_filter_enabled=hard_filter)
+    pool = build_pending_pool(profiles, hard_filter_enabled=hard_filter_enabled)
     entry = draw_one(pool, random.Random())
     if entry is None:
         return None
@@ -43,6 +52,11 @@ def draw(hard_filter: bool = True, conn: sqlite3.Connection = Depends(get_db)) -
         # doesn't need a second round trip to render the draw.
         "content": _load_content(conn, repository, entry),
     }
+
+
+def _stored_hard_filter_enabled(conn: sqlite3.Connection, repository: Any) -> bool:
+    _criteria, enabled = repository.get_hard_filter_settings(conn)
+    return bool(enabled)
 
 
 def _pending_profiles(conn: sqlite3.Connection, repository: Any) -> list:

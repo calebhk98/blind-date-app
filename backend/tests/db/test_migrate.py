@@ -59,7 +59,7 @@ def test_check_clause_matches_enum(enum_cls: type, column: str) -> None:
 
 def test_apply_migrations_creates_all_tables(conn: sqlite3.Connection) -> None:
     applied = apply_migrations(conn)
-    assert applied == [1]
+    assert applied == [1, 2]
 
     tables = {
         row["name"]
@@ -74,17 +74,18 @@ def test_apply_migrations_creates_all_tables(conn: sqlite3.Connection) -> None:
         "review_decisions",
         "model_predictions",
         "schema_version",
+        "settings",  # migration 0002 (design doc §7.4, issue #21)
     }
 
 
 def test_apply_migrations_is_idempotent(conn: sqlite3.Connection) -> None:
     first = apply_migrations(conn)
     second = apply_migrations(conn)
-    assert first == [1]
+    assert first == [1, 2]
     assert second == []
 
     version_rows = conn.execute("SELECT version FROM schema_version").fetchall()
-    assert [row["version"] for row in version_rows] == [1]
+    assert [row["version"] for row in version_rows] == [1, 2]
 
 
 def test_indexes_created(conn: sqlite3.Connection) -> None:

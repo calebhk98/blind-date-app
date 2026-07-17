@@ -18,6 +18,7 @@ from typing import Any
 
 from backend.config import CONFIG
 from backend.domain.types import RawPhoto, RawProfile
+from backend.logic.hard_filter import HardFilterCriteria, HardFilterFields, evaluate_hard_filter
 
 
 class _NullSwipedStore:
@@ -59,10 +60,18 @@ def fetch_new_profiles(
         if callable(close):
             close()
 
-    return [_persist_profile(conn, repository, raw) for raw in raw_profiles]
+    # Loaded once per fetch batch (not once per profile) -- the stored
+    # criteria can't change mid-batch, and this avoids one settings read per
+    # profile. The session-level enabled *toggle* isn't needed here: whether
+    # a profile trips the filter is independent of whether the toggle
+    # currently excludes hits from the draw pool (design doc §7.4).
+    criteria, _enabled = repository.get_hard_filter_settings(conn)
+    return [_persist_profile(conn, repository, raw, criteria) for raw in raw_profiles]
 
 
-def _persist_profile(conn: sqlite3.Connection, repository: Any, raw: RawProfile) -> str:
+def _persist_profile(
+    conn: sqlite3.Connection, repository: Any, raw: RawProfile, criteria: HardFilterCriteria
+) -> str:
     profile_id = str(uuid.uuid4())
     repository.insert_profile(
         conn,
@@ -70,23 +79,35 @@ def _persist_profile(conn: sqlite3.Connection, repository: Any, raw: RawProfile)
         app_id=raw.app_id,
         external_id=raw.external_id,
         bio_text=raw.bio_text,
-        hard_filter_hit=_hard_filter_hit(raw),
+        hard_filter_hit=_hard_filter_hit(raw, criteria),
     )
     for photo in raw.photos:
         _persist_photo(conn, repository, profile_id, photo)
     return profile_id
 
 
-def _hard_filter_hit(raw: RawProfile) -> bool:  # noqa: ARG001 - see docstring
-    """Whether ``raw`` trips the hard filter.
+def _hard_filter_hit(raw: RawProfile, criteria: HardFilterCriteria) -> bool:
+    """Whether ``raw`` trips the hard filter (design doc §7.4, issue #20).
 
-    No dedicated hard-filter pure-logic module exists yet (design doc §4
-    reserves that as its own single-source-of-truth rule, analogous to
-    ``logic/verdict.py``/``logic/decision.py``); ``RawProfile.metadata`` is
-    deliberately opaque per-adapter data (see ``domain/types.py``), so the
-    only safe, app-agnostic default here is "no hit" until that rule lands.
+    Translates the adapter's opaque ``RawProfile.metadata`` (see
+    ``domain/types.py``: "never branched on outside the adapter") into the
+    normalized ``HardFilterFields`` the pure rule reads -- ``age``/
+    ``distance`` come from metadata when an adapter populates them, and
+    ``text`` is the bio plus any metadata ``prompts``, lowered. The rule
+    itself lives in exactly one place: ``logic.hard_filter.evaluate_hard_filter``.
     """
-    return False
+    fields = HardFilterFields(
+        age=raw.metadata.get("age"),
+        distance=raw.metadata.get("distance"),
+        text=_profile_text(raw),
+    )
+    return evaluate_hard_filter(fields, criteria)
+
+
+def _profile_text(raw: RawProfile) -> str:
+    prompts = raw.metadata.get("prompts") or []
+    prompt_text = " ".join(str(p) for p in prompts) if isinstance(prompts, list) else str(prompts)
+    return f"{raw.bio_text} {prompt_text}".lower()
 
 
 def _persist_photo(conn: sqlite3.Connection, repository: Any, profile_id: str, photo: RawPhoto) -> None:

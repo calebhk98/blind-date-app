@@ -23,6 +23,11 @@ const NAV_ITEMS = [
     title: "Dashboard",
     description: "Pending counts, decision totals, and rolling model accuracy.",
   },
+  {
+    href: "/settings",
+    title: "Settings",
+    description: "Edit hard-filter criteria and the draw-pool toggle.",
+  },
 ];
 
 export default function Home() {

@@ -20,6 +20,7 @@ from backend.api.routes import (
     photos,
     profiles,
     review,
+    settings,
     swipe,
 )
 from backend.config import CONFIG
@@ -44,3 +45,4 @@ app.include_router(swipe.router)
 app.include_router(inference.router)
 app.include_router(dashboard.router)
 app.include_router(photos.router)
+app.include_router(settings.router)
