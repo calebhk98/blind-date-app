@@ -1,0 +1,67 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.bioWrap {
+  width: 100%;
+  min-height: 240px;
+  border-radius: 16px;
+  background: #f7f7f7;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+}
+
+.bio {
+  font-size: 18px;
+  line-height: 1.6;
+  color: var(--foreground);
+  white-space: pre-wrap;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.actions button {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.yes {
+  background: #1a7f37;
+  color: #fff;
+}
+
+.no {
+  background: #c62828;
+  color: #fff;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actions button:not(:disabled):hover {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .bioWrap {
+    background: #161616;
+  }
+}

@@ -1,0 +1,128 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  font-family: var(--font-geist-sans);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+.back {
+  font-size: 14px;
+  color: #666;
+  width: fit-content;
+}
+
+.page h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.intro {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.filterToggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  cursor: pointer;
+  width: fit-content;
+}
+
+.itemWrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.kindLabel {
+  font-size: 12px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.resultBanner {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 16px;
+  background: #f2f2f2;
+}
+
+.resultTitle {
+  font-weight: 600;
+}
+
+.resultList {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 14px;
+  color: #444;
+}
+
+.reviewLink {
+  font-size: 14px;
+  font-weight: 600;
+  color: #8a5a00;
+  background: #fff1cc;
+  padding: 10px 14px;
+  border-radius: 10px;
+  width: fit-content;
+}
+
+.nextButton {
+  align-self: flex-start;
+  padding: 12px 24px;
+  border-radius: 999px;
+  border: none;
+  background: #111;
+  color: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.nextButton:hover {
+  background: #333;
+}
+
+@media (prefers-color-scheme: dark) {
+  .resultBanner {
+    background: #1a1a1a;
+  }
+
+  .resultList {
+    color: #bbb;
+  }
+
+  .reviewLink {
+    background: #3a2f00;
+    color: #ffe082;
+  }
+
+  .nextButton {
+    background: #ededed;
+    color: #111;
+  }
+
+  .nextButton:hover {
+    background: #ccc;
+  }
+}
