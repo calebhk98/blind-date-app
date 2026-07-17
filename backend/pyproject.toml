@@ -27,6 +27,11 @@ disallow_untyped_defs = false
 check_untyped_defs = false
 ignore_errors = true
 
+# Planned/ holds unimplemented scaffold adapters (stubs); don't type-gate them.
+[[tool.mypy.overrides]]
+module = "backend.adapters.planned.*"
+ignore_errors = true
+
 [tool.ruff]
 line-length = 100
 target-version = "py311"
