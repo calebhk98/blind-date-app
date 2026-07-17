@@ -1,0 +1,152 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 48px 24px 96px;
+  font-family: var(--font-geist-sans);
+  color: var(--foreground);
+  min-height: 100vh;
+}
+
+.back {
+  font-size: 14px;
+  color: #666;
+  width: fit-content;
+}
+
+.page h1 {
+  font-size: 28px;
+  font-weight: 700;
+}
+
+.intro {
+  font-size: 14px;
+  color: #666;
+  line-height: 1.5;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  border-radius: 12px;
+  background: #f2f2f2;
+}
+
+.toggleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #444;
+}
+
+.field input,
+.toggleRow input[type="checkbox"] {
+  font: inherit;
+}
+
+.field input {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  color: #111;
+  font-weight: 400;
+}
+
+.field input:focus {
+  outline: 2px solid #111;
+  outline-offset: 1px;
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.actions button {
+  padding: 10px 18px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  background: #111;
+  color: #fff;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.saved {
+  font-size: 13px;
+  color: #1a7f37;
+  font-weight: 600;
+}
+
+.saveError {
+  font-size: 13px;
+  color: #c62828;
+  font-weight: 600;
+}
+
+@media (max-width: 500px) {
+  .row {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .form {
+    background: #1a1a1a;
+  }
+
+  .field {
+    color: #bbb;
+  }
+
+  .field input {
+    background: #111;
+    border-color: #444;
+    color: #ededed;
+  }
+
+  .field input:focus {
+    outline-color: #ededed;
+  }
+
+  .actions button {
+    background: #ededed;
+    color: #111;
+  }
+
+  .saved {
+    color: #4cd07d;
+  }
+
+  .saveError {
+    color: #ff6b6b;
+  }
+}

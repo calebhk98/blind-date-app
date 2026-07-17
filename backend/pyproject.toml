@@ -1,0 +1,40 @@
+[project]
+name = "blind-date-app-backend"
+version = "0.1.0"
+description = "Personal dating-app aggregator backend (orchestrator, adapters, ML)."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+# Tests import the package as ``backend.*``; run pytest from the repo root.
+testpaths = ["backend/tests"]
+python_files = ["test_*.py"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_return_any = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+ignore_missing_imports = true
+files = ["backend"]
+
+# Tests exercise behaviour, not type surface; type-check production code only.
+[[tool.mypy.overrides]]
+module = "backend.tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+ignore_errors = true
+
+# Planned/ holds unimplemented scaffold adapters (stubs); don't type-gate them.
+[[tool.mypy.overrides]]
+module = "backend.adapters.planned.*"
+ignore_errors = true
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

@@ -1,0 +1,95 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.photoWrap {
+  width: 100%;
+  aspect-ratio: 3 / 4;
+  border-radius: 16px;
+  overflow: hidden;
+  background: #eee;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.brokenImage {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  color: #888;
+  font-size: 14px;
+  padding: 16px;
+  text-align: center;
+}
+
+.rawPath {
+  font-size: 11px;
+  font-family: var(--font-geist-mono, monospace);
+  word-break: break-all;
+  color: #aaa;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+}
+
+.actions button {
+  flex: 1;
+  padding: 14px 0;
+  border-radius: 12px;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.yes {
+  background: #1a7f37;
+  color: #fff;
+}
+
+.no {
+  background: #c62828;
+  color: #fff;
+}
+
+.notRelevant {
+  background: #e0e0e0;
+  color: #333;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .actions button:not(:disabled):hover {
+    opacity: 0.85;
+  }
+}
+
+@media (prefers-color-scheme: dark) {
+  .photoWrap {
+    background: #1e1e1e;
+  }
+
+  .notRelevant {
+    background: #333;
+    color: #eee;
+  }
+}
