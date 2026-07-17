@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   api,
   ApiError,
-  resolvePhotoUrl,
+  photoImageUrl,
   type DrawItem,
   type JudgeResponse,
   type PhotoLabel,
@@ -173,7 +173,7 @@ export default function ReviewPage() {
           </div>
           {item.modality === "photo" ? (
             <PhotoJudgeCard
-              photoUrl={resolvePhotoUrl(item.content.file_path)}
+              photoUrl={photoImageUrl(item.item_id)}
               rawPath={item.content.file_path}
               disabled={phase === "judging"}
               onJudge={handleJudge}

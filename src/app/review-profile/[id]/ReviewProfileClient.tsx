@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   api,
   ApiError,
-  resolvePhotoUrl,
+  photoImageUrl,
   type ProfileResponse,
 } from "@/lib/api";
 import { addPendingSwipe } from "@/lib/pendingSwipes";
@@ -132,7 +132,7 @@ export function ReviewProfileClient({ profileId }: { profileId: string }) {
           {result.data.photos.length > 0 ? (
             <div className={styles.photoGrid}>
               {result.data.photos.map((photo, i) => {
-                const url = resolvePhotoUrl(photo.file_path);
+                const url = photoImageUrl(photo.photo_id);
                 return url ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img

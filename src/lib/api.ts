@@ -160,6 +160,17 @@ export function resolvePhotoUrl(filePath: string | null | undefined): string | n
   return /^https?:\/\//i.test(filePath) ? filePath : null;
 }
 
+/**
+ * URL of the backend route that streams a photo's bytes by id
+ * (GET /photos/{photo_id}/image). Prefer this over resolvePhotoUrl(file_path):
+ * the draw payload's `item_id` (for a photo modality) and a profile photo's
+ * `photo_id` are both valid ids here.
+ */
+export function photoImageUrl(photoId: string | null | undefined): string | null {
+  if (!photoId) return null;
+  return `${API_BASE_URL}/photos/${encodeURIComponent(photoId)}/image`;
+}
+
 // ---- Core request helper ---------------------------------------------------
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {

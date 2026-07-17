@@ -79,6 +79,24 @@ class AutomationConfig:
 
 
 @dataclass(frozen=True)
+class ApiConfig:
+    """Local API server settings (design doc §3: React UI talks to FastAPI)."""
+
+    # Origins allowed to call the API from a browser. The Next.js UI runs on
+    # :3000 by default; override with a comma-separated BDA_CORS_ORIGINS.
+    cors_origins: tuple[str, ...] = field(
+        default_factory=lambda: tuple(
+            o.strip()
+            for o in os.environ.get(
+                "BDA_CORS_ORIGINS",
+                "http://localhost:3000,http://127.0.0.1:3000",
+            ).split(",")
+            if o.strip()
+        )
+    )
+
+
+@dataclass(frozen=True)
 class StorageConfig:
     """Local persistence locations (design doc §5: SQLite + filesystem images)."""
 
@@ -104,6 +122,7 @@ class Config:
     model: ModelConfig = field(default_factory=ModelConfig)
     automation: AutomationConfig = field(default_factory=AutomationConfig)
     storage: StorageConfig = field(default_factory=StorageConfig)
+    api: ApiConfig = field(default_factory=ApiConfig)
 
     def ensure_dirs(self) -> None:
         """Create the local data directories if they do not yet exist."""

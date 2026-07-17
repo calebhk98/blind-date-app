@@ -9,10 +9,31 @@ needs torch, playwright, or Appium-Python-Client to succeed.
 from __future__ import annotations
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-from backend.api.routes import apps, dashboard, draw, inference, judge, profiles, review, swipe
+from backend.api.routes import (
+    apps,
+    dashboard,
+    draw,
+    inference,
+    judge,
+    photos,
+    profiles,
+    review,
+    swipe,
+)
+from backend.config import CONFIG
 
 app = FastAPI(title="Blind Date App Orchestrator")
+
+# The React UI is served from a different origin (Next.js on :3000) and calls
+# this API from the browser, so it needs CORS. Origins come from config.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=list(CONFIG.api.cors_origins),
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(apps.router)
 app.include_router(profiles.router)
@@ -22,3 +43,4 @@ app.include_router(review.router)
 app.include_router(swipe.router)
 app.include_router(inference.router)
 app.include_router(dashboard.router)
+app.include_router(photos.router)
